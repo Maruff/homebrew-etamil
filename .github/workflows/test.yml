@@ -28,11 +28,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Homebrew is installed on the Linux runners but not on the PATH, which showed
+      # as "command not found" the first time this ran.
+      - uses: Homebrew/actions/setup-homebrew@main
+
       - name: Tap this checkout
         run: brew tap Maruff/etamil "$GITHUB_WORKSPACE"
 
+      # The offences are also written as annotations, so they can be read from the
+      # run's summary without opening the log.
       - name: Audit
-        run: brew audit --strict Maruff/etamil/etamil
+        run: |
+          if ! brew audit --strict Maruff/etamil/etamil > audit.txt 2>&1; then
+            cat audit.txt
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::error::$line"
+            done < audit.txt
+            exit 1
+          fi
 
       - name: Install
         run: brew install Maruff/etamil/etamil
