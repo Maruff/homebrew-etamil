@@ -29,11 +29,10 @@ jobs:
       - uses: actions/checkout@v4
 
       # Homebrew is installed on the Linux runners but not on the PATH, which showed
-      # as "command not found" the first time this ran.
+      # as "command not found" the first time this ran. This action fixes that, and
+      # because this repository is a tap it also taps it, so the checkout is what
+      # `brew` sees as Maruff/etamil; tapping it again fails with a remote mismatch.
       - uses: Homebrew/actions/setup-homebrew@main
-
-      - name: Tap this checkout
-        run: brew tap Maruff/etamil "$GITHUB_WORKSPACE"
 
       # The offences are also written as annotations, so they can be read from the
       # run's summary without opening the log.
