@@ -30,6 +30,11 @@ class Etamil < Formula
 
   def install
     libexec.install "etamil"
+    # The language server, in every release built since it existed; older ones lack it.
+    if File.exist?("etamil-lsp")
+      libexec.install "etamil-lsp"
+      bin.install_symlink libexec/"etamil-lsp"
+    end
     pkgshare.install "nUlakam", "examples"
     # ETAMIL_PATH lets  இறக்கு "nUlakam/..."  resolve from any directory.
     (bin/"etamil").write_env_script libexec/"etamil", ETAMIL_PATH: pkgshare
@@ -37,5 +42,6 @@ class Etamil < Formula
 
   test do
     assert_match version.to_s, shell_output("#{bin}/etamil --version")
+    assert_predicate bin/"etamil-lsp", :executable? if (libexec/"etamil-lsp").exist?
   end
 end
