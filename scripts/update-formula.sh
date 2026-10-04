@@ -9,7 +9,9 @@ set -euo pipefail
 VERSION="${1:?usage: update-formula.sh <version, without the v>}"
 F="$(cd "$(dirname "$0")/.." && pwd)/Formula/etamil.rb"
 BASE="https://github.com/Maruff/eTamil_lang/releases/download/v$VERSION"
-sed -i.bak "s/^  version \".*\"/  version \"$VERSION\"/" "$F"
+# The version is not written as its own line: Homebrew reads it from the URLs, and
+# audits an explicit one that matches as redundant. So the URLs carry it.
+sed -i.bak "s#/releases/download/v[0-9][^/]*/#/releases/download/v$VERSION/#" "$F"
 for p in macos-arm64 macos-x64 linux-arm64 linux-x64; do
     sum="$(curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors "$BASE/etamil-$p.tar.gz.sha256" | awk '{print $1}')"
     [ "${#sum}" -eq 64 ] || { echo "bad checksum for $p" >&2; mv "$F.bak" "$F"; exit 1; }
