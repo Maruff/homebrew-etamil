@@ -1,0 +1,61 @@
+name: test
+
+# Installs the formula for real on every platform it supports, runs a program,
+# and removes it again. The formula downloads the project's published release
+# archives, so the version it names must already be released; a failure after
+# a version bump usually means the release is not out yet or its assets are
+# missing.
+on:
+  push:
+    branches: [main]
+    paths: ['Formula/**', 'scripts/**', '.github/workflows/test.yml']
+  pull_request:
+    paths: ['Formula/**', 'scripts/**', '.github/workflows/test.yml']
+  workflow_dispatch:
+
+jobs:
+  formula:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS arm64, os: macos-15 }
+          - { name: macOS x64, os: macos-15-intel }
+          - { name: Linux x64, os: ubuntu-latest }
+          - { name: Linux arm64, os: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tap this checkout
+        run: brew tap Maruff/etamil "$GITHUB_WORKSPACE"
+
+      - name: Audit
+        run: brew audit --strict Maruff/etamil/etamil
+
+      - name: Install
+        run: brew install Maruff/etamil/etamil
+
+      - name: brew test
+        run: brew test Maruff/etamil/etamil
+
+      - name: Run a program from another directory
+        run: |
+          etamil --version
+          cd "$(mktemp -d)"
+          printf 'அச்சு("வணக்கம்");\n' > hello.qmz
+          etamil hello.qmz | grep -q 'வணக்கம்'
+          etamil --check hello.qmz
+
+      - name: The library is installed and found
+        run: |
+          prefix="$(brew --prefix etamil)"
+          test -d "$prefix/share/etamil/nUlakam"
+          # The wrapper sets ETAMIL_PATH, so imports resolve from any directory.
+          grep -q ETAMIL_PATH "$(brew --prefix)/bin/etamil"
+
+      - name: Uninstall
+        run: |
+          brew uninstall etamil
+          ! command -v etamil
